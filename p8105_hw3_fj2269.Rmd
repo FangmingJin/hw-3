@@ -87,7 +87,7 @@ plot_aisle_n = instacart %>%
 plot_aisle_n
 ```
 
-*There are 39 aisles that meet our requirement. If we rank the aisles with more than 10000 orders, we will see the count of orders exponentially grows as the rank increases. The higher the rank is, the faster the count grows. And two aisle, fresh fruits and fresh vegetables, have highest counts and exceed other asiles.* 
+*There are 39 aisles that meet our requirement. If we rank the aisles with more than 10000 orders, we will see the product count of orders exponentially grows as the rank rises. Higher the rank of an aisle is, greater the gap of count between it and aisle with bigger rank. And top2 aisle, fresh fruits and fresh vegetables, have highest product counts and exceed other asiles.* 
 
 **Step 4: make a table showing the three most popular items and ordered number in “baking ingredients”, “dog food care”, and “packaged vegetables fruits”**
 
@@ -126,7 +126,7 @@ mean_hour = instacart %>%
 kable(mean_hour, align = 'c')
 ```
 
-*The sell of coffee ice cream increases from Monday to Tuesday and remains in a high level from Tuesday to Thurday, on Friday it decreases ,reaches the lowest level and remains a steady low level from Friday to Sunday. During the middle of the week, people like to buy coffee ice cream and as for weekend, they do not.*
+*The sell of coffee ice cream increases from Monday to Tuesday and remains in a high level from Tuesday to Thurday, on Friday it decreases ,reaches the lowest point and remains a steady low level from Friday to Sunday. During the middle of the week, people like to buy coffee ice cream and as for weekend, they do not.*
 
 *The sell of pink lady apples increases from Monday to Wednesday and reach a peak on Wednesday, it decreases on Thurday and remains a steady low level from Thurday to Sunday. On Wednesday, people would like to buy pink lady apples while on other days of the week, they do not.*
 
@@ -196,9 +196,9 @@ plot_spag = mean_exc %>%
 plot_spag    
 ```
 
-*As for a single state, the data value always fluctuates irregularly as time passes. And I cannot find out increase or decrease of data value across states as time passes. The level of data value remain stable globally as year pass.*
+*At the individual level, the average data value of a state always fluctuates irregularly as time passes. And we cannot find regulation of average data value if we only observe value change across time in different state separately. An the level of state as a whole, The average data value remain stable as year pass globally .*
 
-**Step 4: make a plot showing distribution of data value for responses in NY state**
+**Step 4: make a plot showing distribution of data value for responses among locations in NY state**
 
 ```{r Q2S4, echo=FALSE, warning=FALSE, fig.width=8}
 plot_two_panel = brfss %>%
@@ -212,10 +212,12 @@ plot_two_panel = brfss %>%
     geom_point(size = 0.5, alpha = 0.5) +
     scale_fill_gradientn(name = "data value", colors = c("yellow", "orange", "red")) + 
     facet_grid(~year) +
-    labs(title = "Distribution of data value for responses in NY state", y = "average data value", x = "response") +
+    labs(title = "Distribution of data value for responses among locations in NY state", y = "data value", x = "response") +
     theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(size = 9, face = "bold"))
 plot_two_panel
 ```
+
+*The distribution of data value for response in 2006 and 2010 are similar among location in NY state. Poor responce has the lowest data value, data value of fair response ranks last but one among value of different responses. data value of Good and very good response are highest, in some location, data value of good response is higher than that of very good response, in others it is opposite. Excellent reponse has the third highest data value.*
 
 ### Question 3
 
@@ -244,7 +246,7 @@ accel
 
 *There is `r nrow(accel)` observation of `r ncol(accel)` variable in accel dataset above. Each observation represents a record of activity counts for each minute of a 24-hour day starting at midnight. We recorded five weeks of accelerometer data from a 63 year-old male.* 
 
-*As for variable: Week means the week that activity counts is recorded. Day means which day of the week that activity counts is recorded. Minute means the minute of day that activity counts is recorded. Day_id means id of the daysm. Activity_value means the activity counts value.*
+*As for variable: Week means the week that activity counts is recorded. Day means which day of the week that activity counts is recorded. Minute means the minute of day that activity counts is recorded. Day_id means id of the day. Activity_value means the activity counts value.*
 
 **Step 2: Make a table showing the total activity variable for each day**
 
