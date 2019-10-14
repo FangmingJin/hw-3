@@ -1,0 +1,270 @@
+---
+title: "p8105_hw3_fj2269"
+author: "Fangming Jin"
+date: "2019/10/4"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggridges)
+library(readxl)
+library(knitr)
+```
+
+### Question 1
+
+**Step 1: describe the dataset**
+
+```{r Q1S1SS1, warning=FALSE, include=FALSE}
+library(p8105.datasets)
+data("instacart")
+```
+Instacart dataset contains `r nrow(instacart)` observation of `r ncol(instacart)` variable. Each observation represents an product from an order in Instacart online grocery. Each variable records a service information about this product. The variable of the dataset is as follow:
+```{r Q1S1SS2, echo=FALSE, warning=FALSE}
+var_table = tibble(
+  variable = variable.names(instacart),
+  description = c("order identifier", "product identifier", "order in which each product was added to cart", "if this prodcut has been ordered by this user in the past", "customer identifier", "which evaluation set this order belongs in", "order sequence number for this user", "day of the week on which the order was placed", "hour of the day on which the order was placed", "days since the last order", "name of the product", "aisle identifier", "department identifier", "name of the aisle", "name of the department"))
+kable(var_table, align = 'l')
+```
+Instacart dataset has row for observation and column for variable. One row correspond to one observation, recording all kinds of information of an observation. One column corresponds to one variable, recording one information of all observations.
+
+We will use the observation to illustrate:
+```{r Q1S1SS3, echo=FALSE, warning=FALSE}
+kable(instacart[1,], align = 'l')
+```
+This observation shows information above
+
+*a) Target product is Bulgarian Yogurt (id: 49302). It belongs to yogurt aisle (id: 120), dairy eggs departments (id: 16).*
+
+*b) It is bought by user 49302 in his/her fourth order(id: 1) at 10 am, fourth day of the month.*
+
+*c) Bulgarian Yogurt has been bought by user 49302 before and was firstly added to cart in this order.*
+
+*d) This order belongs to train evaluation.*
+
+**Step two: characteristic of aisle**
+
+```{r Q1S2, echo=FALSE, warning=FALSE}
+aisle_dis = instacart %>%
+  summarize(
+    aisle_dis = n_distinct(aisle)) %>%
+  pull(aisle_dis)
+aisle_max = instacart %>%
+  group_by(aisle) %>%
+  summarize(
+    aisle_cou = n()) %>%
+  mutate(aisle_cou = as.numeric(aisle_cou)) %>%
+  filter(aisle_cou == max(aisle_cou)) %>%
+  pull(aisle)
+```
+*There are `r aisle_dis` aisle in the dataset, and most items are ordered from `r aisle_max`*
+
+**Step three: make a plot on number of products ordered in each aisle**
+
+```{r Q1S3, echo=FALSE, warning=FALSE}
+plot_aisle_n = instacart %>%
+  group_by(aisle) %>%
+  summarize(
+    aisle_cou = n()) %>%
+  filter(aisle_cou > 10000) %>%
+  arrange(aisle_cou) %>%
+  mutate(aisle = forcats::fct_reorder(aisle, aisle_cou)) %>% 
+  ggplot(aes(x = aisle, y = aisle_cou, color = aisle_cou)) + 
+    theme_bw() + 
+    geom_point(size = 2, alpha = 0.5) +
+    scale_color_gradientn(colors=c("darkred", "orange", "yellow")) +
+    labs(title = "Number of products ordered in each aisle", x=NULL, y="Count", caption = "limited to aisles with more than 10000 items ") +
+    theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.25,size = 9, face = "bold"),legend.position = "none") +
+    scale_y_continuous(trans = "sqrt") 
+plot_aisle_n
+```
+
+*There are 39 aisles that meet our requirement. If we rank the aisles with more than 10000 orders, we will see the count of orders exponentially grows as the rank increases. The higher the rank is, the faster the count grows. And two aisle, fresh fruits and fresh vegetables, have highest counts and exceed other asiles.* 
+
+**Step 4: make a table showing the three most popular items and ordered number in “baking ingredients”, “dog food care”, and “packaged vegetables fruits”**
+
+```{r Q1S4, echo=FALSE, warning=FALSE}
+popular_item = instacart %>%
+  filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetables fruits") %>%
+  group_by(aisle, product_name) %>%
+  summarize(item_n = n())
+popular_item = popular_item %>%
+  group_by(aisle) %>%
+  mutate(item_rank = min_rank(max(item_n) - item_n)) %>%
+  filter(item_rank == 1 | item_rank == 2 | item_rank == 3) %>%
+  mutate(item_rank = recode(item_rank, "1" = "Top 1", "2" = "Top 2", "3" = "Top 3")) %>%
+  rename("Rank" = item_rank, "item_number" = item_n) %>%
+  arrange(aisle,Rank)
+popular_item
+```
+*The top 3 product in packaged vegetables fruits is `r pull(filter(popular_item,aisle == "packaged vegetables fruits"), product_name)`, the top 3 product in dog food care is `r pull(filter(popular_item,aisle == "dog food care"), product_name)`, the top 3 product in baking ingredients is `r pull(filter(popular_item,aisle == "baking ingredients"), product_name)`. Packaged vegetables fruits have top 3 products that sells best comparing with top 3 in baking ingredients and dog food care. Dog food care's top 3 have the lowest sell comparing with other two aisle.*
+
+**Step 5: make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week**
+
+```{r Q1S5, echo=FALSE, warning=FALSE}
+mean_hour = instacart %>%
+  filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%
+  group_by(order_dow, product_name) %>%
+  summarize(mean = round(mean(order_hour_of_day),2)) %>%
+  ungroup(order_dow, product_name) %>%
+  mutate(order_dow = recode(order_dow, "1" = "Monday", "2" = "Tuesday", "3" = "Wednesday", "4" = "Thurday", "5" = "Friday", "6" = "Saturday", "0" = "Sunday"),
+         order_dow = factor(order_dow,levels = c("Monday", "Tuesday", "Wednesday", "Thurday", "Friday", "Saturday", "Sunday"))) %>%
+  arrange(order_dow) %>%
+  pivot_wider(
+    names_from = "order_dow",
+    values_from = "mean"
+  )
+kable(mean_hour, align = 'c')
+```
+*The sell of coffee ice cream increases from Monday to Tuesday and remains in a high level from Tuesday to Thurday, on Friday it decreases ,reaches the lowest level and remains a steady low level from Friday to Sunday. During the middle of the week, people like to buy coffee ice cream and as for weekend, they do not.*
+
+*The sell of pink lady apples increases from Monday to Wednesday and reach a peak on Wednesday, it decreases on Thurday and remains a steady low level from Thurday to Sunday. On Wednesday, people would like to buy pink lady apples while on other days of the week, they do not.*
+
+### Question 2
+
+**Step 1: Data Clean**
+
+```{r Q2S1, echo=FALSE, warning=FALSE}
+data("brfss_smart2010")
+brfss = brfss_smart2010 %>%
+  janitor::clean_names() %>%
+  rename("location_desc" = locationdesc,
+         "location_abbr" = locationabbr,
+         "resp_id" = respid) %>%
+  filter(topic == "Overall Health") %>%
+  filter(response %in% c("Excellent", "Very good", "Good", "Fair", "Poor")) %>%
+  mutate(response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent"))) %>%
+  separate(location_desc, into = c("state", "location_desc"), sep = "-") %>%
+  select(-state)
+brfss
+```
+
+**Step 2: find out states that were observed at 7 or more locations**
+
+```{r Q2S2, echo=FALSE, warning=FALSE}
+state_loc = brfss %>%
+  filter(year == "2002"|year == "2010") %>%
+  group_by(year,location_abbr) %>%
+  summarize(loc_dis = n_distinct(location_desc)) %>%
+  filter(loc_dis >= 7)
+loc_2002 = state_loc %>%
+  filter(year == "2002") %>%
+  pull(location_abbr)
+loc_2010 = state_loc %>%
+  filter(year == "2010") %>%
+  pull(location_abbr)
+```
+*In 2002, state including `r loc_2002` were observed at 7 or more locations.*
+*In 2010, state including `r loc_2010` were observed at 7 or more locations.*
+*The number of observed states in 2010 is greater than that of 2006.*
+
+**Step 3.1: summarize average of data value across locations within a state over year**
+
+```{r Q2S3SS1, echo=FALSE, warning=FALSE}
+mean_exc = brfss %>%
+  filter(response == "Excellent") %>%
+  group_by(year, location_abbr) %>%
+  summarize(mean_data_value = mean(data_value, na.rm = TRUE)) %>%
+  mutate(mean_data_value = round(mean_data_value,1))
+mean_exc
+```
+
+**Step 3.2: Spaghetti plot of average data value over time within a state**
+
+```{r Q2S3SS2, echo=FALSE, warning=FALSE}
+plot_spag = mean_exc %>%
+  ggplot(aes(x = year, y = mean_data_value, group = location_abbr, color = location_abbr)) + 
+    geom_line(size=0.2) + 
+    labs(title = "Change of average data value within state over time", y = "average data value", x = "year", caption = "limited to excellent response") + 
+    theme_classic() +
+    theme(plot.title = element_text(hjust = 0.5), axis.title.y = element_text(angle=90),legend.position = "right", legend.title = element_text(size= 5), legend.text = element_text(size = 5)) +
+    viridis::scale_color_viridis(name = "State", discrete = TRUE) +
+    scale_x_continuous(
+    breaks = c(2002:2010), 
+    labels = c("2002","2003","2004","2005","2006","2007","2008","2009","2010"))
+plot_spag    
+```
+*As for a single state, the data value always fluctuates irregularly as time passes. And I cannot find out increase or decrease of data value across states as time passes. The level of data value remain stable globally as year pass.*
+
+**Step 4: make a plot showing distribution of data value for responses in NY state**
+
+```{r Q2S4, echo=FALSE, warning=FALSE, fig.width=8}
+plot_two_panel = brfss %>%
+  filter(year %in% c(2006,2010)& location_abbr == "NY") %>%
+  group_by(year, location_desc, response) %>%
+  summarize(mean_data_value = mean(data_value)) %>%
+  ungroup(year, location_desc, response) %>%
+  ggplot(aes(x = response, y = mean_data_value, group = location_desc)) +
+    geom_bar(stat = "identity", position = "dodge", color = "black", aes(fill = mean_data_value)) +
+    geom_line(aes(color = location_desc),size = 0.5) + 
+    geom_point(size = 0.5, alpha = 0.5) +
+    scale_fill_gradientn(name = "data value", colors = c("yellow", "orange", "red")) + 
+    facet_grid(~year) +
+    labs(title = "Distribution of data value for responses in NY state", y = "average data value", x = "response") +
+    theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(size = 9, face = "bold"))
+plot_two_panel
+```
+
+### Question 3
+
+**Step 1: tidy and wrangle the data**
+
+```{r Q3S1, echo=FALSE, warning=FALSE}
+accel = read_csv(file = "./Q3/accel_data.csv") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute",
+    names_prefix = "activity_",
+    values_to = "activity_count"
+  ) %>%
+  mutate(weekday_weekend = recode(day, "Friday" = "Weekday", "Thursday" = "Weekday", "Monday" = "Weekday", "Wednesday" = "Weekday", "Tuesday" = "Weekday", "Sunday" = "Weekend", "Saturday" = "Weekend")) %>%
+  mutate(
+    week = as.numeric(week),
+    day_id = as.numeric(day_id),
+    day = factor(day,levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")),
+    minute = as.numeric(minute),
+    activity_count = as.numeric(activity_count),
+    weekday_weekend = as.character(weekday_weekend)) %>%
+  arrange(week, day, minute)
+accel
+```
+*There is `r nrow(accel)` observation of `r ncol(accel)` variable in accel dataset above. Each observation represents a record of activity counts for each minute of a 24-hour day starting at midnight. We recorded five weeks of accelerometer data from a 63 year-old male.* 
+
+*As for variable: Week means the week that activity counts is recorded. Day means which day of the week that activity counts is recorded. Minute means the minute of day that activity counts is recorded. Day_id means id of the daysm. Activity_value means the activity counts value.*
+
+**Step 2: Make a table showing the total activity variable for each day**
+
+```{r Q3S2, echo=FALSE, warning=FALSE}
+total_act = accel %>%
+  drop_na(week) %>%
+  group_by(week,day,day_id) %>%
+  summarize(
+    sum_act = sum(activity_count)
+  ) %>%
+  ungroup(week,day,day_id) %>%
+  mutate(day = factor(day,levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))) %>%
+  arrange(week, day) 
+total_act
+```
+*There is no apperent trend as total activity count changes day by day. The fluctuation of total activity count over time is violent. We may need to observe the data in another way.*
+
+**Step 3: 
+
+```{r Q3S3, echo=FALSE, warning=FALSE}
+plot_time = accel %>%
+  mutate(day_order = sort(rep(c(1:35),1440))) %>%
+  ggplot(aes(x = minute, y = activity_count, group = day_order, color = day)) +
+    geom_line(size = 0.5) +
+    scale_color_hue(name = "day of \n the week", h =c(100,400)) +
+    labs(title = "24 hours activity count in different day of week", y = "activity count", x = "hour of the day") +
+    scale_x_continuous(
+    breaks = c(1,c(1:24)*60), 
+    labels = c(0:24)) +
+    theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(size = 9, face = "bold"), legend.position = "right") 
+plot_time
+```
+*According to this graph, there are two peak of activity count during 24 hours, first peak is from 7:00 to 11:00, second peak is from 20:00 to 22:00. And there is a trough of activity from midnight to 6:00.*
+
