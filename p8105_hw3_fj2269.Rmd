@@ -27,7 +27,7 @@ Instacart dataset contains `r nrow(instacart)` observation of `r ncol(instacart)
 ```{r Q1S1SS2, echo=FALSE, warning=FALSE}
 var_table = tibble(
   variable = variable.names(instacart),
-  description = c("order identifier", "product identifier", "order in which each product was added to cart", "if this prodcut has been ordered by this user in the past", "customer identifier", "which evaluation set this order belongs in", "order sequence number for this user", "day of the week on which the order was placed", "hour of the day on which the order was placed", "days since the last order", "name of the product", "aisle identifier", "department identifier", "name of the aisle", "name of the department"))
+  description = c("order identifier", "product identifier", "order in which each product was added to cart", "if this prodcut has been ordered by this user in the past", "customer identifier", "which evaluation set this order belongs in", "order sequence number for this user", "day of the week on which the order was placed", "hour of the day on which the order was placed", "days since the last order", "name of the product", "aisle identifier", "department identifier", "the aisle", "name of the department"))
 kable(var_table, align = 'l')
 ```
 
